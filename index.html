@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APPLE ][ - SNAKE BYTE (1982 Sirius Software)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #161512;
+      color: #e6dfc8;
+      font-family: 'Courier New', Courier, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Apple II Beige Case Styling */
+    .apple-case {
+      background: linear-gradient(145deg, #d8cfb8 0%, #c7bc9f 55%, #b3a688 100%);
+      border: 4px solid #8e8268;
+      border-radius: 22px;
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.85),
+        inset 0 3px 6px rgba(255, 255, 255, 0.45),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.35);
+      padding: 18px 22px 16px 22px;
+      max-width: 920px;
+      width: 98vw;
+      margin: 10px auto;
+    }
+
+    /* Monitor Bezel */
+    .crt-bezel {
+      background: linear-gradient(180deg, #272522 0%, #181715 50%, #100f0d 100%);
+      border: 8px solid #433e35;
+      border-radius: 20px;
+      padding: 14px;
+      box-shadow:
+        inset 0 8px 24px rgba(0, 0, 0, 0.95),
+        0 4px 10px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* CRT Screen Container */
+    .crt-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      max-height: 540px;
+      margin: 0 auto;
+      background: #050505;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        inset 0 0 40px rgba(0, 0, 0, 0.9),
+        0 0 2px rgba(255, 255, 255, 0.15);
+      outline: none;
+    }
+
+    canvas#appleCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    /* CRT Scanline & Curvature Overlay */
+    .crt-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          rgba(18, 16, 16, 0) 50%,
+          rgba(0, 0, 0, 0.38) 50%
+        ),
+        radial-gradient(
+          circle at center,
+          transparent 62%,
+          rgba(0, 0, 0, 0.58) 100%
+        );
+      background-size: 100% 4px, 100% 100%;
+      z-index: 10;
+    }
+
+    /* Subtle CRT glass reflection */
+    .crt-glare {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(
+        125deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.01) 35%,
+        transparent 45%
+      );
+      z-index: 11;
+    }
+
+    /* Monitor Phosphor Glow Filters */
+    .mode-color canvas {
+      filter: contrast(1.12) saturate(1.22) brightness(1.04);
+    }
+    .mode-amber canvas {
+      filter: drop-shadow(0 0 3px rgba(255, 140, 0, 0.35)) contrast(1.15);
+    }
+    .mode-green canvas {
+      filter: drop-shadow(0 0 3px rgba(40, 255, 80, 0.35)) contrast(1.15);
+    }
+
+    /* Rainbow Apple Logo Badge */
+    .rainbow-badge {
+      width: 18px;
+      height: 22px;
+      border-radius: 4px;
+      background: linear-gradient(
+        to bottom,
+        #61bb46 0%, #61bb46 16.6%,
+        #fdb827 16.6%, #fdb827 33.3%,
+        #f5821f 33.3%, #f5821f 50%,
+        #e03a3e 50%, #e03a3e 66.6%,
+        #963d97 66.6%, #963d97 83.3%,
+        #009ddc 83.3%, #009ddc 100%
+      );
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.4);
+    }
+
+    /* Disk II Drive Bay */
+    .disk-drive {
+      background: linear-gradient(180deg, #322f2a 0%, #22201c 100%);
+      border: 3px solid #595246;
+      border-radius: 10px;
+      padding: 6px 12px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+    }
+
+    .led-off {
+      background: #4a1212;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+    }
+
+    .led-on {
+      background: #ff2a1a;
+      box-shadow:
+        0 0 10px #ff2a1a,
+        0 0 20px #ff5500,
+        inset 0 1px 2px #fff;
+    }
+
+    .retro-btn {
+      background: linear-gradient(180deg, #4a453c 0%, #2d2a24 100%);
+      color: #e8dfc5;
+      border: 2px solid #6b6354;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      outline: none;
+    }
+
+    .retro-btn:hover {
+      background: linear-gradient(180deg, #5c564b 0%, #3b3730 100%);
+      border-color: #968b76;
+    }
+
+    .retro-btn:active {
+      transform: translateY(1px);
+    }
+
+    .retro-btn.active-amber {
+      background: linear-gradient(180deg, #994d00 0%, #592b00 100%);
+      border-color: #ff9900;
+      color: #ffd280;
+      box-shadow: 0 0 8px rgba(255, 140, 0, 0.45);
+    }
+
+    .retro-btn.active-green {
+      background: linear-gradient(180deg, #0f681c 0%, #073b0f 100%);
+      border-color: #33ff55;
+      color: #b8ffc5;
+      box-shadow: 0 0 8px rgba(51, 255, 85, 0.45);
+    }
+
+    .retro-btn.active-color {
+      background: linear-gradient(180deg, #2b4c7e 0%, #182b49 100%);
+      border-color: #55aaff;
+      color: #d8ecff;
+      box-shadow: 0 0 8px rgba(85, 170, 255, 0.45);
+    }
+
+    .retro-btn.active-diff {
+      background: linear-gradient(180deg, #5b3278 0%, #341b47 100%);
+      border-color: #c875ff;
+      color: #f3e0ff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="apple-case">
+    <!-- Top Nameplate Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 px-1">
+      <div class="flex items-center gap-3">
+        <div class="rainbow-badge"></div>
+        <div>
+          <div class="text-stone-900 font-black tracking-widest text-base leading-none">
+            APPLE ][ <span class="text-xs font-bold text-stone-700">PLUS</span>
+          </div>
+          <div class="text-xs text-stone-700 font-semibold tracking-wider">
+            SIRIUS SOFTWARE INC. • SNAKE BYTE (1982)
+          </div>
+        </div>
+      </div>
+
+      <!-- Monitor Phosphor Mode Selector -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <span class="text-xs font-bold text-stone-800 mr-1">MONITOR:</span>
+        <button id="btnColor" type="button" class="retro-btn active-color" onclick="this.blur(); setMonitorMode('color')">
+          🌈 8-BIT COLOR
+        </button>
+        <button id="btnAmber" type="button" class="retro-btn" onclick="this.blur(); setMonitorMode('amber')">
+          🟠 주홍색 (AMBER)
+        </button>
+        <button id="btnGreen" type="button" class="retro-btn" onclick="this.blur(); setMonitorMode('green')">
+          🟢 초록색 (GREEN)
+        </button>
+      </div>
+    </div>
+
+    <!-- CRT Monitor Bezel -->
+    <div class="crt-bezel">
+      <div id="crtContainer" class="crt-container mode-color" tabindex="0">
+        <!-- Apple II Standard Hi-Res Resolution: 280x192 scaled 2x to 560x384 -->
+        <canvas id="appleCanvas" width="560" height="384"></canvas>
+        <div class="crt-overlay"></div>
+        <div class="crt-glare"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Disk II Drive & Control Deck -->
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2 px-1">
+      <!-- Disk II Drive 1 Unit -->
+      <div class="disk-drive flex items-center gap-3">
+        <div class="flex flex-col items-center">
+          <div id="diskLed" class="w-3.5 h-3.5 rounded-full led-off transition-all duration-75"></div>
+          <span class="text-xs text-stone-400 font-bold mt-0.5">IN USE</span>
+        </div>
+        <div class="h-7 w-24 bg-black border border-stone-700 rounded flex items-center justify-center relative overflow-hidden">
+          <div class="w-16 h-1.5 bg-stone-800 rounded"></div>
+          <div id="diskLabel" class="absolute bottom-0.5 right-1.5 text-xs text-amber-400 font-mono opacity-80">
+            TRK 00
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-stone-300 tracking-wider">DISK ][ DRIVE 1</div>
+          <div id="diskStatusText" class="text-xs text-stone-400">DOS 3.3 MASTER</div>
+        </div>
+      </div>
+
+      <!-- Quick Controls -->
+      <div class="flex flex-wrap items-center gap-1.5">
+        <button type="button" class="retro-btn" onclick="this.blur(); rebootDiskIntro()" title="디스크 부팅 인트로 다시 보기">
+          💾 REBOOT
+        </button>
+        <button id="btnSkipIntro" type="button" class="retro-btn" onclick="this.blur(); skipToTitle()" title="인트로 건너뛰기">
+          ⏭️ SKIP INTRO
+        </button>
+        <button id="btnDifficulty" type="button" class="retro-btn active-diff" onclick="this.blur(); cycleDifficulty()" title="난이도 선택: 자두 개수(0~2개) + 게임 속도 조합 (단축키 0,1,2,3 또는 F)">
+          🎚️ 난이도: NORMAL (자두1·보통)
+        </button>
+        <button id="btnControlMode" type="button" class="retro-btn" onclick="this.blur(); toggleControlScheme()" title="4방향 키 / 오리지널 2키(좌우 회전) 전환 (단축키 C)">
+          ⌨️ CTRL: 4-KEY
+        </button>
+        <button type="button" class="retro-btn" onclick="this.blur(); changeLevel(-1)" title="이전 레벨 ([)">
+          ◀ LV
+        </button>
+        <button type="button" class="retro-btn" onclick="this.blur(); changeLevel(1)" title="다음 레벨 (])">
+          LV ▶
+        </button>
+        <button id="btnSound" type="button" class="retro-btn" onclick="this.blur(); toggleMute()">
+          🔊 SOUND: ON
+        </button>
+      </div>
+    </div>
+
+    <!-- Touch / On-screen D-Pad + Help Footer -->
+    <div class="mt-2.5 pt-2 border-t border-stone-600/50 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-stone-800 font-semibold">
+      <div>
+        🕹️ <span class="font-bold">조작:</span> 방향키/WASD • <span class="font-bold">0,1,2,3 / F:</span> 난이도(자두 개수+속도) • <span class="font-bold">SPACE:</span> 시작/일시정지 • <span class="font-bold">M:</span> 모니터 변경
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" class="retro-btn px-2.5 py-1" onclick="this.blur(); handleTouchDir('LEFT')">◀</button>
+        <button type="button" class="retro-btn px-2.5 py-1" onclick="this.blur(); handleTouchDir('UP')">▲</button>
+        <button type="button" class="retro-btn px-2.5 py-1" onclick="this.blur(); handleTouchDir('DOWN')">▼</button>
+        <button type="button" class="retro-btn px-2.5 py-1" onclick="this.blur(); handleTouchDir('RIGHT')">▶</button>
+        <button type="button" class="retro-btn px-2.5 py-1 ml-1" onclick="this.blur(); handleActionButton()">START / PAUSE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**************************************************************************
+     * APPLE ][ SNAKE BYTE (1982 Sirius Software by Chuck Sommerville)
+     * Authentic Recreation & Bug-Fixed Edition:
+     *  - Disk II DOS 3.3 Boot & Venetian-Blind HGR Memory Loader Intro
+     *  - 3 Monitor Modes: 8-Bit Color (HGR), Amber (주홍색), Green (초록색)
+     *  - 4 Selectable Difficulty / Speed Levels (SLOW, NORMAL, FAST, EXPERT)
+     *  - Accurate Plum Ricochet Physics, Reachable Apple Spawner, 28 Levels
+     **************************************************************************/
+
+    const canvas = document.getElementById('appleCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 560; // 280 * 2
+    const H = 384; // 192 * 2
+
+    // Monitor mode: 'color' | 'amber' | 'green'
+    let monitorMode = 'color';
+
+    const PALETTES = {
+      color: {
+        bg: '#000000',
+        white: '#F4F4FF',
+        green: '#18F038',    // Apple II HGR Green
+        violet: '#D840FF',   // Apple II HGR Violet/Purple
+        orange: '#FF6810',   // Apple II HGR Orange
+        blue: '#1898FF',     // Apple II HGR Blue
+        dimText: '#A8D8FF'
+      },
+      amber: {
+        bg: '#0D0500',
+        white: '#FFB833',
+        green: '#FF8C00',    // Primary Amber Phosphor
+        violet: '#FFA62B',   // Bright Amber
+        orange: '#FF6A00',   // Deep Orange-Amber
+        blue: '#CC5500',     // Mid Amber
+        dimText: '#B85D00'
+      },
+      green: {
+        bg: '#020B03',
+        white: '#88FF99',
+        green: '#28FF48',    // Primary P31 Green Phosphor
+        violet: '#55FF70',   // Bright Green
+        orange: '#18C832',   // Medium Green
+        blue: '#0E9622',     // Dark Green
+        dimText: '#148824'
+      }
+    };
+
+    function pal() {
+      return PALETTES[monitorMode];
+    }
+
+    function setMonitorMode(mode) {
+      monitorMode = mode;
+      const crt = document.getElementById('crtContainer');
+      crt.classList.remove('mode-color', 'mode-amber', 'mode-green');
+      crt.classList.add('mode-' + mode);
+
+      document.getElementById('btnColor').className = 'retro-btn' + (mode === 'color' ? ' active-color' : '');
+      document.getElementById('btnAmber').className = 'retro-btn' + (mode === 'amber' ? ' active-amber' : '');
+      document.getElementById('btnGreen').className = 'retro-btn' + (mode === 'green' ? ' active-green' : '');
+      speakerClick(880, 0.025);
+    }
+
+    /**************************************************************************
+     * DIFFICULTY PRESETS (COMBINING PLUMS COUNT 0/1/2 + GAME SPEED)
+     **************************************************************************/
+    const DIFFICULTIES = [
+      {
+        id: 'EASY',
+        key: '0',
+        plums: 0,
+        label: 'EASY   (0 PLUMS • SLOW)',
+        btnLabel: 'EASY (자두0·느림)',
+        shortLabel: 'EASY',
+        baseMoveMs: 215,       // 여유로운 입문자 속도, 자두 없음
+        minMoveMs: 135,
+        levelSpeedScale: 1.0,
+        appleSpeedStep: 1.5,
+        baseGrow: 2,
+        plumSpeed: 0,
+        deadlineSec: 32,       // 사과당 32초
+        penaltyApples: 2,
+        scoreMult: 1
+      },
+      {
+        id: 'NORMAL',
+        key: '1',
+        plums: 1,
+        label: 'NORMAL (1 PLUM  • NORMAL)',
+        btnLabel: 'NORMAL (자두1·보통)',
+        shortLabel: 'NORMAL',
+        baseMoveMs: 170,       // 오리지널 애플2 표준 속도 + 자두 1개
+        minMoveMs: 105,
+        levelSpeedScale: 1.2,
+        appleSpeedStep: 1.8,
+        baseGrow: 3,
+        plumSpeed: 4.8,
+        deadlineSec: 24,
+        penaltyApples: 3,
+        scoreMult: 2
+      },
+      {
+        id: 'HARD',
+        key: '2',
+        plums: 2,
+        label: 'HARD   (2 PLUMS • FAST)',
+        btnLabel: 'HARD (자두2·빠름)',
+        shortLabel: 'HARD',
+        baseMoveMs: 135,       // 숙련자용 빠른 속도 + 자두 2개
+        minMoveMs: 82,
+        levelSpeedScale: 1.4,
+        appleSpeedStep: 2.2,
+        baseGrow: 4,
+        plumSpeed: 6.2,
+        deadlineSec: 18,
+        penaltyApples: 3,
+        scoreMult: 3
+      },
+      {
+        id: 'EXPERT',
+        key: '3',
+        plums: 2,
+        label: 'EXPERT (2 PLUMS • TURBO)',
+        btnLabel: 'EXPERT (자두2·초고속)',
+        shortLabel: 'EXPERT',
+        baseMoveMs: 100,       // 마스터용 초고속 + 빠른 자두 2개
+        minMoveMs: 60,
+        levelSpeedScale: 1.6,
+        appleSpeedStep: 2.5,
+        baseGrow: 5,
+        plumSpeed: 8.2,
+        deadlineSec: 14,
+        penaltyApples: 3,
+        scoreMult: 4
+      }
+    ];
+
+    let difficultyIdx = 1; // Default: NORMAL (자두 1개 • 보통 속도)
+
+    function diff() {
+      return DIFFICULTIES[difficultyIdx];
+    }
+
+    function applyDifficultyToActiveGame() {
+      const D = diff();
+      numPlumsConfig = D.plums;
+      const applesEatenSoFar = Math.max(0, 10 - applesLeft);
+      moveIntervalMs = Math.max(
+        D.minMoveMs,
+        D.baseMoveMs - Math.floor(currentLevel * D.levelSpeedScale) - applesEatenSoFar * D.appleSpeedStep
+      );
+
+      if (gameState === 'PLAYING' || gameState === 'GET_READY') {
+        if (plums.length !== numPlumsConfig) {
+          spawnPlums();
+        } else {
+          for (let i = 0; i < plums.length; i++) {
+            const sx = plums[i].vx >= 0 ? 1 : -1;
+            const sy = plums[i].vy >= 0 ? 1 : -1;
+            plums[i].vx = sx * D.plumSpeed;
+            plums[i].vy = sy * D.plumSpeed;
+          }
+        }
+      }
+
+      document.getElementById('btnDifficulty').textContent = `🎚️ 난이도: ${D.btnLabel}`;
+    }
+
+    function cycleDifficulty(setIndex = null) {
+      if (setIndex !== null) {
+        difficultyIdx = setIndex % DIFFICULTIES.length;
+      } else {
+        difficultyIdx = (difficultyIdx + 1) % DIFFICULTIES.length;
+      }
+      applyDifficultyToActiveGame();
+      speakerClick(580 + difficultyIdx * 120, 0.035);
+    }
+
+    /**************************************************************************
+     * WEB AUDIO API - APPLE II $C030 1-BIT SPEAKER & DISK II STEPPER SYNTH
+     **************************************************************************/
+    let audioCtx = null;
+    let soundMuted = false;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function toggleMute() {
+      ensureAudio();
+      soundMuted = !soundMuted;
+      document.getElementById('btnSound').textContent = soundMuted ? '🔇 SOUND: OFF' : '🔊 SOUND: ON';
+    }
+
+    function speakerClick(freq = 900, duration = 0.04, type = 'square', vol = 0.12) {
+      if (soundMuted) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + duration);
+      } catch (e) {}
+    }
+
+    function playDiskSeekRattle() {
+      if (soundMuted) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      for (let i = 0; i < 9; i++) {
+        setTimeout(() => {
+          speakerClick(110 + (i % 2) * 35, 0.018, 'sawtooth', 0.18);
+        }, i * 24);
+      }
+    }
+
+    function playDiskTrackStep(track) {
+      if (soundMuted) return;
+      ensureAudio();
+      if (!audioCtx) return;
+      speakerClick(160 + (track % 6) * 20, 0.015, 'sawtooth', 0.11);
+    }
+
+    function sfxAppleBeep() {
+      speakerClick(1000, 0.16, 'square', 0.16);
+    }
+
+    function sfxEatApple() {
+      const notes = [523, 659, 784, 1046, 1318];
+      notes.forEach((f, idx) => {
+        setTimeout(() => speakerClick(f, 0.045, 'square', 0.13), idx * 36);
+      });
+    }
+
+    function sfxGateOpen() {
+      const notes = [440, 554, 659, 880, 659, 880, 1174];
+      notes.forEach((f, idx) => {
+        setTimeout(() => speakerClick(f, 0.06, 'square', 0.14), idx * 55);
+      });
+    }
+
+    function sfxLevelClear() {
+      const notes = [523, 659, 784, 1046, 784, 1046, 1318, 1568];
+      notes.forEach((f, idx) => {
+        setTimeout(() => speakerClick(f, 0.075, 'square', 0.15), idx * 65);
+      });
+    }
+
+    function sfxPenaltyAlarm() {
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => speakerClick(i % 2 === 0 ? 310 : 220, 0.06, 'sawtooth', 0.16), i * 65);
+      }
+    }
+
+    function sfxCrash() {
+      for (let i = 0; i < 14; i++) {
+        setTimeout(() => {
+          speakerClick(380 - i * 22 + (Math.random() * 40 - 20), 0.04, 'sawtooth', 0.18);
+        }, i * 32);
+      }
+    }
+
+    /**************************************************************************
+     * DISK II LED & DRIVE STATUS HELPER
+     **************************************************************************/
+    function setDiskDriveState(active, trackNum = 0, statusText = 'DOS 3.3 MASTER') {
+      const led = document.getElementById('diskLed');
+      const label = document.getElementById('diskLabel');
+      const status = document.getElementById('diskStatusText');
+      if (active) {
+        led.className = 'w-3.5 h-3.5 rounded-full led-on transition-all duration-75';
+      } else {
+        led.className = 'w-3.5 h-3.5 rounded-full led-off transition-all duration-75';
+      }
+      const hexTrk = trackNum.toString(16).toUpperCase().padStart(2, '0');
+      label.textContent = `TRK $${hexTrk}`;
+      status.textContent = statusText;
+    }
+
+    /**************************************************************************
+     * GAME STATE MACHINE
+     **************************************************************************/
+    let gameState = 'BOOT_INTRO';
+
+    let bootStartTime = 0;
+    let bootLastBeepStage = -1;
+    let bootTrack = 0;
+
+    let numPlumsConfig = 1;       // 0, 1, or 2 bouncing plums
+    let controlScheme = '4KEY';   // '4KEY' or '2KEY'
+    let currentLevel = 1;         // 1 to 28
+    let score = 0;
+    let hiScore = 2450;
+    let snakesLeft = 5;
+    let applesLeft = 10;
+    let gateOpen = false;
+    let stateTimer = 0;
+
+    // Playfield Grid Geometry
+    // 40 columns wide (each cell = 14x14 px -> 560px)
+    // Col 0 and Col 39: Side Deadline Timer Bars
+    // Col 1 and Col 38: Left & Right Perimeter Walls
+    // Row 0 and Row 21: Top & Bottom Perimeter Walls
+    // Playable interior cells: Cols 2..37, Rows 1..20
+    const COLS = 40;
+    const ROWS = 22;
+    const CELL = 14;
+    const GATE_COL_START = 18;
+    const GATE_COL_END = 21;
+
+    // grid[r][c]: 0 = empty, 1 = outer wall, 2 = inner obstacle, 3 = closed gate, 4 = open gate
+    let grid = [];
+
+    // Snake State
+    let snake = [];
+    let snakeDir = { x: 1, y: 0 };
+    let inputQueue = [];
+    let growPending = 0;
+    let moveAccumulator = 0;
+    let moveIntervalMs = 165;
+
+    // Apple State
+    let apple = { x: 20, y: 10 };
+
+    // Plums State: { x, y, vx, vy } where (x, y) is center in grid units (e.g. col + 0.5, row + 0.5)
+    let plums = [];
+    const PLUM_RADIUS = 0.34;
+
+    // Side Deadline Timer Bars (0.0 to 1.0)
+    let deadlineProgress = 0;
+    let penaltyFlashTimer = 0;
+
+    // Title Screen Demo Snake
+    let demoSnake = [];
+    let demoDir = { x: 1, y: 0 };
+    let demoTimer = 0;
+
+    /**************************************************************************
+     * ALL 28 CLASSIC LEVELS OF APPLE II SNAKE BYTE
+     * Verified so no obstacle touches the outer wall or blocks the gate!
+     **************************************************************************/
+    function buildLevelArena(levelNum) {
+      const lv = ((levelNum - 1) % 28) + 1;
+      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+
+      // Outer Perimeter Walls
+      for (let r = 0; r < ROWS; r++) {
+        grid[r][1] = 1;
+        grid[r][COLS - 2] = 1;
+      }
+      for (let c = 1; c <= COLS - 2; c++) {
+        grid[0][c] = 1;
+        grid[ROWS - 1][c] = 1;
+      }
+
+      // Top Exit Gate
+      for (let c = GATE_COL_START; c <= GATE_COL_END; c++) {
+        grid[0][c] = gateOpen ? 4 : 3;
+      }
+
+      // Safe obstacle drawing helpers: always leave at least 2 cells buffer from outer walls
+      // (rows 3..ROWS-4, cols 4..COLS-5) so the snake can always loop around every barrier!
+      const hLine = (r, c1, c2) => {
+        for (let c = c1; c <= c2; c++) {
+          if (r >= 3 && r <= ROWS - 4 && c >= 4 && c <= COLS - 5) grid[r][c] = 2;
+        }
+      };
+      const vLine = (c, r1, r2) => {
+        for (let r = r1; r <= r2; r++) {
+          if (r >= 3 && r <= ROWS - 4 && c >= 4 && c <= COLS - 5) grid[r][c] = 2;
+        }
+      };
+      const rectBlock = (r1, c1, r2, c2) => {
+        for (let r = r1; r <= r2; r++) hLine(r, c1, c2);
+      };
+
+      switch (lv) {
+        case 1:
+          break;
+        case 2:
+          hLine(10, 10, 29);
+          break;
+        case 3:
+          vLine(12, 4, 16);
+          vLine(27, 4, 16);
+          break;
+        case 4:
+          rectBlock(4, 6, 6, 10);
+          rectBlock(4, 29, 6, 33);
+          rectBlock(14, 6, 16, 10);
+          rectBlock(14, 29, 16, 33);
+          break;
+        case 5:
+          hLine(10, 11, 28);
+          vLine(19, 4, 16);
+          vLine(20, 4, 16);
+          break;
+        case 6:
+          hLine(6, 7, 32);
+          hLine(14, 7, 32);
+          break;
+        case 7:
+          vLine(10, 4, 16);
+          vLine(29, 4, 16);
+          hLine(10, 10, 29);
+          break;
+        case 8:
+          hLine(5, 10, 17);
+          hLine(5, 22, 29);
+          hLine(15, 10, 17);
+          hLine(15, 22, 29);
+          vLine(10, 5, 8);
+          vLine(10, 12, 15);
+          vLine(29, 5, 8);
+          vLine(29, 12, 15);
+          break;
+        case 9:
+          for (let i = 0; i < 5; i++) {
+            rectBlock(3 + i * 3, 6 + i * 6, 4 + i * 3, 8 + i * 6);
+          }
+          break;
+        case 10:
+          vLine(11, 3, 13);
+          vLine(20, 6, 16);
+          vLine(28, 3, 13);
+          break;
+        case 11:
+          hLine(4, 6, 17); hLine(4, 22, 33);
+          hLine(16, 6, 17); hLine(16, 22, 33);
+          vLine(6, 4, 16); vLine(33, 4, 16);
+          break;
+        case 12:
+          for (let r = 4; r <= 15; r += 4) {
+            for (let c = 6; c <= 33; c += 6) {
+              rectBlock(r, c, r + 1, c + 1);
+            }
+          }
+          break;
+        case 13:
+          for (let c = 7; c <= 32; c += 5) {
+            if (c % 2 === 1) vLine(c, 3, 11);
+            else vLine(c, 8, 16);
+          }
+          break;
+        case 14:
+          hLine(4, 8, 17); hLine(4, 22, 31);
+          vLine(8, 4, 15);
+          vLine(31, 4, 15);
+          hLine(9, 14, 18); hLine(9, 21, 25);
+          vLine(14, 9, 15);
+          vLine(25, 9, 15);
+          break;
+        case 15:
+          hLine(5, 6, 15); vLine(10, 5, 10);
+          hLine(5, 24, 33); vLine(29, 5, 10);
+          hLine(15, 6, 15); vLine(10, 11, 15);
+          hLine(15, 24, 33); vLine(29, 11, 15);
+          break;
+        case 16:
+          hLine(4, 5, 27);
+          hLine(8, 12, 34);
+          hLine(12, 5, 27);
+          hLine(16, 12, 34);
+          break;
+        case 17:
+          hLine(10, 15, 24);
+          vLine(19, 6, 14);
+          rectBlock(4, 8, 5, 9);
+          rectBlock(4, 30, 5, 31);
+          rectBlock(15, 8, 16, 9);
+          rectBlock(15, 30, 16, 31);
+          break;
+        case 18:
+          for (let c = 8; c <= 32; c += 6) {
+            vLine(c, 4, 15);
+          }
+          break;
+        case 19:
+          hLine(4, 6, 14); hLine(15, 6, 14); vLine(6, 6, 13);
+          hLine(4, 25, 33); hLine(15, 25, 33); vLine(33, 6, 13);
+          vLine(19, 5, 14); vLine(20, 5, 14);
+          break;
+        case 20:
+          hLine(7, 5, 11); hLine(7, 15, 24); hLine(7, 28, 34);
+          hLine(14, 5, 11); hLine(14, 15, 24); hLine(14, 28, 34);
+          vLine(13, 3, 5); vLine(13, 9, 12);
+          vLine(26, 3, 5); vLine(26, 9, 12);
+          break;
+        case 21:
+          hLine(4, 6, 33);
+          vLine(33, 4, 15);
+          hLine(15, 10, 30);
+          vLine(10, 8, 15);
+          hLine(8, 13, 26);
+          break;
+        case 22:
+          for (let r = 4; r <= 15; r += 3) {
+            for (let c = 6 + (r % 2) * 2; c <= 33; c += 5) {
+              hLine(r, c, c + 1);
+            }
+          }
+          break;
+        case 23:
+          for (let i = 0; i < 5; i++) {
+            hLine(4 + i, 6 + i * 2, 8 + i * 2);
+            hLine(4 + i, 31 - i * 2, 33 - i * 2);
+            hLine(15 - i, 6 + i * 2, 8 + i * 2);
+            hLine(15 - i, 31 - i * 2, 33 - i * 2);
+          }
+          break;
+        case 24:
+          hLine(4, 6, 17); hLine(4, 22, 33);
+          hLine(8, 6, 16); hLine(8, 23, 33);
+          hLine(12, 6, 17); hLine(12, 22, 33);
+          hLine(16, 9, 30);
+          vLine(19, 5, 11);
+          break;
+        case 25:
+          rectBlock(4, 6, 6, 9);
+          rectBlock(4, 30, 6, 33);
+          rectBlock(13, 6, 15, 9);
+          rectBlock(13, 30, 15, 33);
+          hLine(6, 14, 25);
+          hLine(13, 14, 25);
+          vLine(14, 8, 11);
+          vLine(25, 8, 11);
+          break;
+        case 26:
+          for (let c = 6; c <= 34; c += 4) {
+            if ((c / 2) % 2 === 1) {
+              vLine(c, 3, 12);
+            } else {
+              vLine(c, 6, 15);
+            }
+          }
+          break;
+        case 27:
+          hLine(9, 5, 17); vLine(10, 4, 15);
+          hLine(9, 22, 34); vLine(29, 4, 15);
+          vLine(19, 3, 7); vLine(20, 11, 15);
+          break;
+        case 28:
+          hLine(4, 5, 16); hLine(4, 23, 34);
+          hLine(8, 9, 30);
+          hLine(12, 5, 16); hLine(12, 23, 34);
+          hLine(15, 9, 30);
+          vLine(9, 4, 6); vLine(30, 4, 6);
+          vLine(15, 8, 10); vLine(24, 8, 10);
+          break;
+      }
+
+      // Ensure snake spawn area (rows 18..19, cols 4..20) and gate approach (rows 1..2, cols 17..22) are clear
+      for (let r = 18; r <= 19; r++) {
+        for (let c = 4; c <= 20; c++) {
+          if (grid[r][c] === 2) grid[r][c] = 0;
+        }
+      }
+      for (let r = 1; r <= 2; r++) {
+        for (let c = GATE_COL_START - 1; c <= GATE_COL_END + 1; c++) {
+          if (grid[r][c] === 2) grid[r][c] = 0;
+        }
+      }
+    }
+
+    function updateGateCells() {
+      for (let c = GATE_COL_START; c <= GATE_COL_END; c++) {
+        grid[0][c] = gateOpen ? 4 : 3;
+      }
+    }
+
+    /**************************************************************************
+     * SPAWNING SNAKE, APPLES, AND PLUMS (WITH FLOOD-FILL VALIDATION)
+     **************************************************************************/
+    function initLevel(resetApples = true) {
+      gateOpen = false;
+      buildLevelArena(currentLevel);
+
+      snake = [
+        { x: 11, y: 18 },
+        { x: 10, y: 18 },
+        { x: 9, y: 18 },
+        { x: 8, y: 18 },
+        { x: 7, y: 18 }
+      ];
+      snakeDir = { x: 1, y: 0 };
+      inputQueue = [];
+      growPending = 0;
+      moveAccumulator = 0;
+
+      if (resetApples) {
+        applesLeft = 10;
+      } else if (applesLeft <= 0) {
+        applesLeft = 1;
+      }
+
+      deadlineProgress = 0;
+      penaltyFlashTimer = 0;
+
+      applyDifficultyToActiveGame();
+      spawnPlums();
+      spawnApple();
+    }
+
+    function isCellOccupiedBySnake(c, r) {
+      for (let i = 0; i < snake.length; i++) {
+        if (snake[i].x === c && snake[i].y === r) return true;
+      }
+      return false;
+    }
+
+    // Flood-fill from snake head to guarantee apple is 100% reachable
+    function getReachableCellsFromHead() {
+      const reachable = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+      if (snake.length === 0) return reachable;
+      const q = [{ x: snake[0].x, y: snake[0].y }];
+      reachable[snake[0].y][snake[0].x] = true;
+      const dirs = [
+        { x: 1, y: 0 },
+        { x: -1, y: 0 },
+        { x: 0, y: 1 },
+        { x: 0, y: -1 }
+      ];
+      while (q.length > 0) {
+        const cur = q.shift();
+        for (const d of dirs) {
+          const nx = cur.x + d.x;
+          const ny = cur.y + d.y;
+          if (nx > 1 && nx < COLS - 2 && ny > 0 && ny < ROWS - 1) {
+            if (!reachable[ny][nx] && grid[ny][nx] === 0 && !isCellOccupiedBySnake(nx, ny)) {
+              reachable[ny][nx] = true;
+              q.push({ x: nx, y: ny });
+            }
+          }
+        }
+      }
+      return reachable;
+    }
+
+    function spawnApple() {
+      if (applesLeft <= 0) return;
+      const reachable = getReachableCellsFromHead();
+      const head = snake[0] || { x: 11, y: 18 };
+      const candidates = [];
+      const fallbackCandidates = [];
+
+      for (let r = 2; r < ROWS - 2; r++) {
+        for (let c = 3; c < COLS - 3; c++) {
+          if (grid[r][c] !== 0 || isCellOccupiedBySnake(c, r)) continue;
+
+          // Count open neighbors so apple never spawns in a 3-wall dead end
+          let openNeighbors = 0;
+          if (grid[r - 1][c] === 0) openNeighbors++;
+          if (grid[r + 1][c] === 0) openNeighbors++;
+          if (grid[r][c - 1] === 0) openNeighbors++;
+          if (grid[r][c + 1] === 0) openNeighbors++;
+
+          if (openNeighbors >= 2) {
+            fallbackCandidates.push({ x: c, y: r });
+            const distFromHead = Math.abs(c - head.x) + Math.abs(r - head.y);
+            if (reachable[r][c] && distFromHead >= 4 && openNeighbors >= 3) {
+              candidates.push({ x: c, y: r });
+            }
+          }
+        }
+      }
+
+      const pool = candidates.length > 0 ? candidates : fallbackCandidates;
+      if (pool.length > 0) {
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        apple.x = pick.x;
+        apple.y = pick.y;
+      } else {
+        apple.x = 20;
+        apple.y = 11;
+      }
+    }
+
+    function findSafePlumSpawn(preferredCol, preferredRow) {
+      for (let radius = 0; radius < 12; radius++) {
+        for (let dr = -radius; dr <= radius; dr++) {
+          for (let dc = -radius; dc <= radius; dc++) {
+            const r = preferredRow + dr;
+            const c = preferredCol + dc;
+            if (r >= 2 && r <= 12 && c >= 3 && c <= COLS - 4) {
+              if (
+                grid[r][c] === 0 &&
+                grid[r - 1][c] === 0 &&
+                grid[r + 1][c] === 0 &&
+                grid[r][c - 1] === 0 &&
+                grid[r][c + 1] === 0 &&
+                !isCellOccupiedBySnake(c, r)
+              ) {
+                return { x: c + 0.5, y: r + 0.5 };
+              }
+            }
+          }
+        }
+      }
+      return { x: 20.5, y: 2.5 };
+    }
+
+    function spawnPlums() {
+      plums = [];
+      const D = diff();
+      const targets = [
+        { c: 31, r: 3, sx: -1, sy: 1 },
+        { c: 8,  r: 3, sx: 1,  sy: 1 }
+      ];
+      for (let i = 0; i < numPlumsConfig; i++) {
+        const t = targets[i];
+        const pos = findSafePlumSpawn(t.c, t.r);
+        plums.push({
+          x: pos.x,
+          y: pos.y,
+          vx: t.sx * D.plumSpeed,
+          vy: t.sy * D.plumSpeed
+        });
+      }
+    }
+
+    /**************************************************************************
+     * DEMO SNAKE FOR TITLE SCREEN
+     **************************************************************************/
+    function initDemoSnake() {
+      demoSnake = [];
+      for (let i = 0; i < 14; i++) {
+        demoSnake.push({ x: 16 - i, y: 16 });
+      }
+      demoDir = { x: 1, y: 0 };
+      demoTimer = 0;
+    }
+    initDemoSnake();
+
+    function updateDemoSnake(dt) {
+      demoTimer += dt;
+      if (demoTimer < 0.085) return;
+      demoTimer = 0;
+
+      const head = demoSnake[0];
+      if (head.x >= 35 && demoDir.x === 1) demoDir = { x: 0, y: -1 };
+      else if (head.y <= 2 && demoDir.y === -1) demoDir = { x: -1, y: 0 };
+      else if (head.x <= 4 && demoDir.x === -1) demoDir = { x: 0, y: 1 };
+      else if (head.y >= 16 && demoDir.y === 1) demoDir = { x: 1, y: 0 };
+
+      demoSnake.unshift({ x: head.x + demoDir.x, y: head.y + demoDir.y });
+      demoSnake.pop();
+    }
+
+    /**************************************************************************
+     * CONTROLS & UI ACTIONS
+     **************************************************************************/
+    function toggleControlScheme() {
+      controlScheme = controlScheme === '4KEY' ? '2KEY' : '4KEY';
+      document.getElementById('btnControlMode').textContent = `⌨️ CTRL: ${controlScheme}`;
+      speakerClick(750, 0.03);
+    }
+
+    function cyclePlums() {
+      numPlumsConfig = (numPlumsConfig + 1) % 3;
+      document.getElementById('btnPlums').textContent = `🟣 PLUMS: ${numPlumsConfig}`;
+      if (gameState === 'PLAYING' || gameState === 'GET_READY') {
+        spawnPlums();
+      }
+      speakerClick(660 + numPlumsConfig * 140, 0.035);
+    }
+
+    function changeLevel(delta) {
+      currentLevel = ((currentLevel - 1 + delta + 28) % 28) + 1;
+      speakerClick(820, 0.03);
+      if (gameState === 'PLAYING' || gameState === 'GET_READY') {
+        initLevel(true);
+        gameState = 'GET_READY';
+        stateTimer = 1.1;
+      }
+    }
+
+    function rebootDiskIntro() {
+      ensureAudio();
+      gameState = 'BOOT_INTRO';
+      bootStartTime = performance.now();
+      bootLastBeepStage = -1;
+      bootTrack = 0;
+      document.getElementById('btnSkipIntro').style.display = 'inline-block';
+      setDiskDriveState(false, 0, 'POWER ON RESET');
+    }
+
+    function skipToTitle() {
+      ensureAudio();
+      setDiskDriveState(false, 17, 'READY');
+      gameState = 'TITLE';
+      document.getElementById('btnSkipIntro').style.display = 'none';
+      speakerClick(1000, 0.05);
+    }
+
+    function startNewGame() {
+      ensureAudio();
+      score = 0;
+      snakesLeft = 5;
+      initLevel(true);
+      gameState = 'GET_READY';
+      stateTimer = 1.2;
+      document.getElementById('btnSkipIntro').style.display = 'none';
+      sfxAppleBeep();
+    }
+
+    function queueDirection4Key(nx, ny) {
+      const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : snakeDir;
+      if (lastDir.x + nx === 0 && lastDir.y + ny === 0) return;
+      if (lastDir.x === nx && lastDir.y === ny) return;
+      if (inputQueue.length < 2) {
+        inputQueue.push({ x: nx, y: ny });
+      }
+    }
+
+    function queueTurn2Key(turn) {
+      const lastDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : snakeDir;
+      let nextDir;
+      if (turn === 'LEFT') {
+        nextDir = { x: lastDir.y, y: -lastDir.x };
+      } else {
+        nextDir = { x: -lastDir.y, y: lastDir.x };
+      }
+      if (inputQueue.length < 2) {
+        inputQueue.push(nextDir);
+      }
+    }
+
+    function handleTouchDir(dir) {
+      ensureAudio();
+      if (gameState === 'BOOT_INTRO') {
+        skipToTitle();
+        return;
+      }
+      if (gameState === 'TITLE' || gameState === 'GAME_OVER') {
+        startNewGame();
+        return;
+      }
+      if (controlScheme === '2KEY') {
+        if (dir === 'LEFT' || dir === 'UP') queueTurn2Key('LEFT');
+        else if (dir === 'RIGHT' || dir === 'DOWN') queueTurn2Key('RIGHT');
+      } else {
+        if (dir === 'LEFT') queueDirection4Key(-1, 0);
+        if (dir === 'RIGHT') queueDirection4Key(1, 0);
+        if (dir === 'UP') queueDirection4Key(0, -1);
+        if (dir === 'DOWN') queueDirection4Key(0, 1);
+      }
+    }
+
+    function handleActionButton() {
+      ensureAudio();
+      if (gameState === 'BOOT_INTRO') {
+        skipToTitle();
+      } else if (gameState === 'TITLE' || gameState === 'GAME_OVER') {
+        startNewGame();
+      } else if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        speakerClick(520, 0.04);
+      } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        speakerClick(880, 0.04);
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      ensureAudio();
+
+      // Prevent default scrolling on game keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      // Ignore key auto-repeat for mode toggles and turn queueing
+      if (e.repeat) return;
+
+      if (e.key === 'm' || e.key === 'M') {
+        const order = ['color', 'amber', 'green'];
+        const next = order[(order.indexOf(monitorMode) + 1) % order.length];
+        setMonitorMode(next);
+        return;
+      }
+
+      if (e.key === 'f' || e.key === 'F') {
+        cycleDifficulty();
+        return;
+      }
+
+      if (e.key === '0' || e.key === '1' || e.key === '2' || e.key === '3') {
+        cycleDifficulty(parseInt(e.key, 10));
+        return;
+      }
+
+      if (gameState === 'BOOT_INTRO') {
+        if (e.key === ' ' || e.key === 'Enter' || e.key === 'Escape') {
+          skipToTitle();
+        }
+        return;
+      }
+
+      if (gameState === 'TITLE') {
+        if (e.key === 'd' || e.key === 'D') {
+          cycleDifficulty();
+          return;
+        }
+        if (e.key === 'c' || e.key === 'C') {
+          toggleControlScheme();
+          return;
+        }
+        if (e.key === '[' || e.key === '-') {
+          changeLevel(-1);
+          return;
+        }
+        if (e.key === ']' || e.key === '=' || e.key === '+') {
+          changeLevel(1);
+          return;
+        }
+        if (e.key === ' ' || e.key === 'Enter') {
+          startNewGame();
+          return;
+        }
+      }
+
+      if (gameState === 'GAME_OVER') {
+        if (e.key === ' ' || e.key === 'Enter') {
+          startNewGame();
+        }
+        return;
+      }
+
+      if (e.key === ' ' || e.key === 'p' || e.key === 'P') {
+        if (gameState === 'PLAYING') {
+          gameState = 'PAUSED';
+          speakerClick(520, 0.04);
+          return;
+        } else if (gameState === 'PAUSED') {
+          gameState = 'PLAYING';
+          speakerClick(880, 0.04);
+          return;
+        }
+      }
+
+      if (e.key === '[') { changeLevel(-1); return; }
+      if (e.key === ']') { changeLevel(1); return; }
+
+      if (gameState === 'PLAYING' || gameState === 'GET_READY') {
+        if (controlScheme === '2KEY') {
+          if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'j' || e.key === 'J') {
+            queueTurn2Key('LEFT');
+          } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'l' || e.key === 'L') {
+            queueTurn2Key('RIGHT');
+          }
+        } else {
+          if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A' || e.key === 'j' || e.key === 'J') {
+            queueDirection4Key(-1, 0);
+          } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D' || e.key === 'l' || e.key === 'L') {
+            queueDirection4Key(1, 0);
+          } else if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === 'i' || e.key === 'I') {
+            queueDirection4Key(0, -1);
+          } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S' || e.key === 'k' || e.key === 'K') {
+            queueDirection4Key(0, 1);
+          }
+        }
+      }
+    });
+
+    /**************************************************************************
+     * PLUM PHYSICS & GAMEPLAY UPDATE LOGIC
+     **************************************************************************/
+    function triggerSnakeDeath() {
+      if (gameState === 'DYING') return;
+      sfxCrash();
+      gameState = 'DYING';
+      stateTimer = 1.25;
+    }
+
+    function isSolidForPlum(col, row) {
+      if (row <= 0 || row >= ROWS - 1 || col <= 1 || col >= COLS - 2) return true;
+      if (grid[row][col] !== 0) return true;
+      // Check snake body segments (excluding head, since head collision is fatal)
+      for (let i = 1; i < snake.length; i++) {
+        if (snake[i].x === col && snake[i].y === row) return true;
+      }
+      return false;
+    }
+
+    function updatePlums(dt) {
+      const headCenterX = snake[0].x + 0.5;
+      const headCenterY = snake[0].y + 0.5;
+
+      for (let i = 0; i < plums.length; i++) {
+        const p = plums[i];
+        const cx = Math.floor(p.x);
+        const cy = Math.floor(p.y);
+
+        // 1. Horizontal movement & ricochet
+        const nextX = p.x + p.vx * dt;
+        const leadX = nextX + (p.vx > 0 ? PLUM_RADIUS : -PLUM_RADIUS);
+        const tx = Math.floor(leadX);
+
+        if (tx !== cx && isSolidForPlum(tx, cy)) {
+          p.vx = -p.vx;
+          p.x = tx > cx ? (tx - PLUM_RADIUS - 0.005) : (tx + 1 + PLUM_RADIUS + 0.005);
+          speakerClick(280, 0.012, 'square', 0.045);
+        } else {
+          p.x = nextX;
+        }
+
+        // 2. Vertical movement & ricochet
+        const cx2 = Math.floor(p.x);
+        const nextY = p.y + p.vy * dt;
+        const leadY = nextY + (p.vy > 0 ? PLUM_RADIUS : -PLUM_RADIUS);
+        const ty = Math.floor(leadY);
+
+        if (ty !== cy && isSolidForPlum(cx2, ty)) {
+          p.vy = -p.vy;
+          p.y = ty > cy ? (ty - PLUM_RADIUS - 0.005) : (ty + 1 + PLUM_RADIUS + 0.005);
+          speakerClick(320, 0.012, 'square', 0.045);
+        } else {
+          p.y = nextY;
+        }
+
+        // Keep strictly within playable interior bounds [2 + R, COLS - 2 - R] and [1 + R, ROWS - 1 - R]
+        if (p.x < 2 + PLUM_RADIUS) { p.x = 2 + PLUM_RADIUS; p.vx = Math.abs(p.vx); }
+        if (p.x > COLS - 2 - PLUM_RADIUS) { p.x = COLS - 2 - PLUM_RADIUS; p.vx = -Math.abs(p.vx); }
+        if (p.y < 1 + PLUM_RADIUS) { p.y = 1 + PLUM_RADIUS; p.vy = Math.abs(p.vy); }
+        if (p.y > ROWS - 1 - PLUM_RADIUS) { p.y = ROWS - 1 - PLUM_RADIUS; p.vy = -Math.abs(p.vy); }
+
+        // 3. Check fatal collision with Snake Head!
+        if (Math.hypot(p.x - headCenterX, p.y - headCenterY) < 0.68) {
+          triggerSnakeDeath();
+          return;
+        }
+      }
+    }
+
+    function updateGameplay(dt) {
+      const D = diff();
+
+      if (penaltyFlashTimer > 0) {
+        penaltyFlashTimer = Math.max(0, penaltyFlashTimer - dt);
+      }
+
+      // 1. Update Side Deadline Timer Bars (only while apples remain)
+      if (!gateOpen && applesLeft > 0) {
+        deadlineProgress += (1.0 / D.deadlineSec) * dt;
+        if (deadlineProgress >= 1.0) {
+          deadlineProgress = 0;
+          applesLeft += D.penaltyApples;
+          penaltyFlashTimer = 1.5;
+          sfxPenaltyAlarm();
+        }
+      }
+
+      // 2. Update Bouncing Plums
+      updatePlums(dt);
+      if (gameState !== 'PLAYING') return;
+
+      // 3. Step Snake on Grid Interval
+      moveAccumulator += dt * 1000;
+      if (moveAccumulator < moveIntervalMs) return;
+      moveAccumulator -= moveIntervalMs;
+
+      if (inputQueue.length > 0) {
+        snakeDir = inputQueue.shift();
+      }
+
+      const head = snake[0];
+      const nextX = head.x + snakeDir.x;
+      const nextY = head.y + snakeDir.y;
+
+      // Check if exiting through open top gate!
+      if (gateOpen && nextY === 0 && nextX >= GATE_COL_START && nextX <= GATE_COL_END) {
+        score += 100 * currentLevel * (numPlumsConfig + 1) * D.scoreMult;
+        if (score > hiScore) hiScore = score;
+        snakesLeft++;
+        sfxLevelClear();
+        gameState = 'LEVEL_WIN';
+        stateTimer = 1.6;
+        return;
+      }
+
+      // Check Outer Wall & Internal Obstacle Collision
+      if (nextY <= 0 || nextY >= ROWS - 1 || nextX <= 1 || nextX >= COLS - 2) {
+        triggerSnakeDeath();
+        return;
+      }
+      const targetCell = grid[nextY][nextX];
+      if (targetCell !== 0) {
+        triggerSnakeDeath();
+        return;
+      }
+
+      // Check Self-Collision (tail tip will vacate unless growing)
+      const checkLen = growPending > 0 ? snake.length : snake.length - 1;
+      for (let i = 0; i < checkLen; i++) {
+        if (snake[i].x === nextX && snake[i].y === nextY) {
+          triggerSnakeDeath();
+          return;
+        }
+      }
+
+      // Check Plum Head-On Collision
+      for (let i = 0; i < plums.length; i++) {
+        if (Math.hypot(plums[i].x - (nextX + 0.5), plums[i].y - (nextY + 0.5)) < 0.68) {
+          triggerSnakeDeath();
+          return;
+        }
+      }
+
+      // Move Snake Head Forward
+      snake.unshift({ x: nextX, y: nextY });
+
+      // Subtle Apple II speaker movement tick
+      speakerClick(140, 0.006, 'square', 0.03);
+
+      // Check if Snake Body pushed into a Plum (bounce plum away from new head/neck)
+      for (let i = 0; i < plums.length; i++) {
+        const p = plums[i];
+        if (Math.floor(p.x) === nextX && Math.floor(p.y) === nextY) {
+          triggerSnakeDeath();
+          return;
+        }
+      }
+
+      // Check Apple Consumption
+      if (!gateOpen && nextX === apple.x && nextY === apple.y) {
+        applesLeft--;
+        deadlineProgress = 0;
+        const pts = (10 + currentLevel * 5) * (numPlumsConfig + 1) * D.scoreMult;
+        score += pts;
+        if (score > hiScore) hiScore = score;
+
+        growPending += D.baseGrow + Math.min(4, Math.floor(currentLevel / 4));
+        moveIntervalMs = Math.max(D.minMoveMs, moveIntervalMs - D.appleSpeedStep);
+
+        if (applesLeft <= 0) {
+          applesLeft = 0;
+          gateOpen = true;
+          updateGateCells();
+          sfxGateOpen();
+        } else {
+          sfxEatApple();
+          spawnApple();
+        }
+      }
+
+      if (growPending > 0) {
+        growPending--;
+      } else {
+        snake.pop();
+      }
+    }
+
+    /**************************************************************************
+     * RENDERING: DISK II DOS 3.3 BOOT & HGR VENETIAN-BLIND FILE LOAD INTRO
+     **************************************************************************/
+    const CATALOG_LINES = [
+      'DISK VOLUME 254',
+      '',
+      ' *A 002 HELLO',
+      ' *B 034 SIRIUS.LOGO',
+      ' *B 052 SNAKE.BYTE',
+      ' *B 018 SNAKE.LEVELS',
+      ' *B 008 SNAKE.SHAPES',
+      ''
+    ];
+
+    function renderBootIntro(now) {
+      const elapsed = (now - bootStartTime) / 1000;
+      const P = pal();
+
+      ctx.fillStyle = P.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.font = 'bold 16px "Courier New", monospace';
+      ctx.textBaseline = 'top';
+
+      if (elapsed >= 0.15 && bootLastBeepStage < 0) {
+        bootLastBeepStage = 0;
+        sfxAppleBeep();
+      }
+
+      if (elapsed < 0.15) return;
+
+      ctx.fillStyle = P.green;
+      ctx.fillText('APPLE ][', 240, 18);
+
+      if (elapsed >= 0.45 && bootLastBeepStage < 1) {
+        bootLastBeepStage = 1;
+        setDiskDriveState(true, 0, 'CALIBRATING TRK $00');
+        playDiskSeekRattle();
+      }
+
+      if (elapsed < 3.65) {
+        let y = 52;
+        const lineH = 18;
+
+        if (elapsed >= 0.95) {
+          if (bootLastBeepStage < 2) {
+            bootLastBeepStage = 2;
+            setDiskDriveState(true, 1, 'BOOTING DOS 3.3');
+            playDiskTrackStep(1);
+          }
+          ctx.fillStyle = P.green;
+          ctx.fillText('DOS VERSION 3.3  SYSTEM MASTER', 24, y); y += lineH;
+          ctx.fillText('APPLE II PLUS OR ROMCARD', 24, y); y += lineH * 1.5;
+        }
+
+        if (elapsed >= 1.45) {
+          const cmd1 = 'CATALOG';
+          const typedLen = Math.min(cmd1.length, Math.floor((elapsed - 1.45) * 18));
+          ctx.fillStyle = P.white;
+          ctx.fillText(']' + cmd1.slice(0, typedLen), 24, y);
+          y += lineH * 1.3;
+        }
+
+        if (elapsed >= 1.95) {
+          if (bootLastBeepStage < 3) {
+            bootLastBeepStage = 3;
+            setDiskDriveState(true, 17, 'READING VTOC TRK $11');
+            playDiskTrackStep(17);
+          }
+          const visibleLines = Math.min(CATALOG_LINES.length, Math.floor((elapsed - 1.95) * 14));
+          ctx.fillStyle = P.green;
+          for (let i = 0; i < visibleLines; i++) {
+            ctx.fillText(CATALOG_LINES[i], 24, y);
+            y += lineH;
+          }
+        }
+
+        if (elapsed >= 2.65) {
+          setDiskDriveState(false, 17, 'DOS 3.3 READY');
+          const cmd2 = 'BRUN SNAKE.BYTE';
+          const typedLen2 = Math.min(cmd2.length, Math.floor((elapsed - 2.65) * 22));
+          ctx.fillStyle = P.white;
+          ctx.fillText(']' + cmd2.slice(0, typedLen2), 24, y);
+          if (Math.floor(now / 220) % 2 === 0) {
+            ctx.fillStyle = P.green;
+            ctx.fillRect(24 + (typedLen2 + 1) * 9.6, y + 2, 10, 15);
+          }
+          y += lineH * 1.4;
+        }
+
+        if (elapsed >= 3.35) {
+          ctx.fillStyle = P.orange;
+          ctx.fillText('LOADING SNAKE.BYTE INTO HGR $2000...', 24, y);
+        }
+      } else if (elapsed < 5.85) {
+        const loadProgress = Math.min(1, (elapsed - 3.65) / 1.95);
+        const totalLinesToLoad = Math.floor(loadProgress * 192);
+
+        const curTrk = 18 + Math.floor(loadProgress * 14);
+        const curSec = Math.floor((loadProgress * 64) % 16);
+        if (curTrk !== bootTrack) {
+          bootTrack = curTrk;
+          playDiskTrackStep(curTrk);
+        } else if (Math.random() < 0.35) {
+          speakerClick(1200 + (curSec * 60), 0.008, 'square', 0.04);
+        }
+        setDiskDriveState(
+          true,
+          curTrk,
+          `READ SNAKE.BYTE T$${curTrk.toString(16).toUpperCase()} S$${curSec.toString(16).toUpperCase()}`
+        );
+
+        renderTitleScreenContent(now, true);
+
+        ctx.fillStyle = P.bg;
+        for (let hgrIdx = totalLinesToLoad; hgrIdx < 192; hgrIdx++) {
+          const group8 = Math.floor(hgrIdx / 24);
+          const rem = hgrIdx % 24;
+          const third = Math.floor(rem / 8);
+          const boxRow = rem % 8;
+          const screenRow = third * 64 + boxRow * 8 + group8;
+          ctx.fillRect(0, screenRow * 2, W, 2);
+        }
+
+        ctx.fillStyle = P.bg;
+        ctx.fillRect(0, 320, W, 64);
+        ctx.strokeStyle = P.green;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 320);
+        ctx.lineTo(W, 320);
+        ctx.stroke();
+
+        ctx.font = 'bold 15px "Courier New", monospace';
+        ctx.fillStyle = P.green;
+        const addrHex = (0x2000 + Math.floor(loadProgress * 0x1FFF)).toString(16).toUpperCase();
+        ctx.fillText(
+          `DISK ][ READING: SNAKE.BYTE   TRACK $${curTrk.toString(16).toUpperCase()}  SECTOR $${curSec.toString(16).toUpperCase().padStart(2, '0')}  ADDR $${addrHex}`,
+          18,
+          334
+        );
+        ctx.fillStyle = P.white;
+        ctx.fillText('SIRIUS SOFTWARE INC.  DOS 3.3 FAST LOADER', 18, 356);
+      } else {
+        skipToTitle();
+      }
+    }
+
+    /**************************************************************************
+     * RENDERING: TITLE SCREEN & DEMO SNAKE
+     **************************************************************************/
+    function renderTitleScreenContent(now, isLoadingPreview = false) {
+      const P = pal();
+      const D = diff();
+      ctx.fillStyle = P.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = P.violet;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(18, 10, W - 36, 290);
+      ctx.strokeStyle = P.green;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(24, 16, W - 48, 278);
+
+      for (let i = demoSnake.length - 1; i >= 0; i--) {
+        const seg = demoSnake[i];
+        const sx = seg.x * CELL;
+        const sy = seg.y * CELL;
+        ctx.fillStyle = i === 0 ? P.white : (i % 2 === 0 ? P.green : P.orange);
+        ctx.fillRect(sx + 1, sy + 1, CELL - 2, CELL - 2);
+      }
+
+      ctx.textAlign = 'center';
+      ctx.font = '900 44px "Courier New", monospace';
+      ctx.fillStyle = P.violet;
+      ctx.fillText('SNAKE BYTE', W / 2 + 3, 38 + 3);
+      ctx.fillStyle = P.green;
+      ctx.fillText('SNAKE BYTE', W / 2, 38);
+
+      drawAppleSprite(W / 2 - 7, 84, P);
+
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.fillStyle = P.white;
+      ctx.fillText('BY CHUCK SOMMERVILLE • 1982 SIRIUS SOFTWARE', W / 2, 102);
+
+      // Authentic Apple II Difficulty Selection Menu (Plums 0/1/2 + Speed combined)
+      ctx.fillStyle = P.orange;
+      ctx.fillText('SELECT DIFFICULTY (PRESS 0, 1, 2, 3 OR F):', W / 2, 124);
+
+      ctx.font = 'bold 14px "Courier New", monospace';
+      for (let i = 0; i < DIFFICULTIES.length; i++) {
+        const item = DIFFICULTIES[i];
+        const rowY = 144 + i * 20;
+        const lineStr = `[${item.key}] ${item.label}`;
+        if (i === difficultyIdx) {
+          // Apple II INVERSE Video Highlight Bar
+          ctx.fillStyle = P.green;
+          ctx.fillRect(W / 2 - 158, rowY - 2, 316, 18);
+          ctx.fillStyle = P.bg;
+          ctx.fillText(`> ${lineStr} <`, W / 2, rowY);
+        } else {
+          ctx.fillStyle = P.white;
+          ctx.fillText(lineStr, W / 2, rowY);
+        }
+      }
+
+      ctx.fillStyle = P.blue;
+      ctx.fillText(
+        `CTRL(C): ${controlScheme === '4KEY' ? '4-KEY' : '2-KEY'}   •   STAGE([/]): LEVEL ${String(currentLevel).padStart(2, '0')}/28`,
+        W / 2,
+        232
+      );
+
+      if (!isLoadingPreview && Math.floor(now / 380) % 2 === 0) {
+        ctx.font = 'bold 15px "Courier New", monospace';
+        ctx.fillStyle = P.white;
+        ctx.fillText('>>> PRESS SPACE OR RETURN TO PLAY <<<', W / 2, 260);
+      }
+
+      ctx.textAlign = 'left';
+      renderBottomHUD(P);
+    }
+
+    /**************************************************************************
+     * RENDERING: PLAYFIELD, SNAKE, APPLE, PLUMS, TIMERS & HUD
+     **************************************************************************/
+    function drawAppleSprite(px, py, P) {
+      ctx.fillStyle = P.orange;
+      ctx.fillRect(px + 3, py + 4, 8, 8);
+      ctx.fillRect(px + 2, py + 5, 10, 6);
+      ctx.fillStyle = P.white;
+      ctx.fillRect(px + 4, py + 5, 2, 2);
+      ctx.fillStyle = P.green;
+      ctx.fillRect(px + 6, py + 1, 3, 3);
+    }
+
+    function drawPlumSprite(px, py, P) {
+      ctx.fillStyle = P.violet;
+      ctx.fillRect(px + 3, py + 3, 8, 8);
+      ctx.fillRect(px + 2, py + 4, 10, 6);
+      ctx.fillStyle = P.white;
+      ctx.fillRect(px + 4, py + 4, 2, 2);
+    }
+
+    function renderPlayfield(now) {
+      const P = pal();
+      const D = diff();
+      ctx.fillStyle = P.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      // 1. Draw Creeping Side Deadline Timer Bars
+      const playfieldH = ROWS * CELL;
+      const barFillH = Math.floor(deadlineProgress * (playfieldH - 16));
+      const barY = playfieldH - 8 - barFillH;
+
+      ctx.strokeStyle = P.blue;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(2, 6, 10, playfieldH - 12);
+      ctx.strokeRect(W - 12, 6, 10, playfieldH - 12);
+
+      const isUrgent = deadlineProgress > 0.78 || penaltyFlashTimer > 0;
+      ctx.fillStyle = isUrgent && (Math.floor(now / 100) % 2 === 0) ? P.white : P.orange;
+      ctx.fillRect(3, barY, 8, barFillH);
+      ctx.fillRect(W - 11, barY, 8, barFillH);
+
+      // 2. Draw Arena Walls, Internal Obstacles & Top Exit Gate
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 1; c <= COLS - 2; c++) {
+          const cell = grid[r][c];
+          if (cell === 0) continue;
+          const x = c * CELL;
+          const y = r * CELL;
+
+          if (cell === 1) {
+            ctx.fillStyle = P.blue;
+            ctx.fillRect(x, y, CELL, CELL);
+            ctx.fillStyle = P.bg;
+            ctx.fillRect(x + 2, y + 6, CELL - 4, 2);
+          } else if (cell === 2) {
+            ctx.fillStyle = P.violet;
+            ctx.fillRect(x + 1, y + 1, CELL - 2, CELL - 2);
+            ctx.fillStyle = P.white;
+            ctx.fillRect(x + 4, y + 4, CELL - 8, CELL - 8);
+          } else if (cell === 3) {
+            ctx.fillStyle = P.orange;
+            ctx.fillRect(x, y + 5, CELL, 4);
+          } else if (cell === 4) {
+            if (Math.floor(now / 160) % 2 === 0) {
+              ctx.fillStyle = P.green;
+              ctx.fillRect(x + 5, y + 2, 4, 4);
+            }
+          }
+        }
+      }
+
+      // 3. Draw Apple
+      if (!gateOpen && applesLeft > 0) {
+        drawAppleSprite(apple.x * CELL, apple.y * CELL, P);
+      }
+
+      // 4. Draw Bouncing Plums
+      for (let i = 0; i < plums.length; i++) {
+        const p = plums[i];
+        drawPlumSprite(Math.round((p.x - 0.5) * CELL), Math.round((p.y - 0.5) * CELL), P);
+      }
+
+      // 5. Draw Snake
+      for (let i = snake.length - 1; i >= 0; i--) {
+        const seg = snake[i];
+        const sx = seg.x * CELL;
+        const sy = seg.y * CELL;
+
+        if (gameState === 'DYING') {
+          ctx.fillStyle = (Math.floor(now / 70) + i) % 2 === 0 ? P.orange : P.white;
+          ctx.fillRect(sx + 1, sy + 1, CELL - 2, CELL - 2);
+        } else if (i === 0) {
+          ctx.fillStyle = P.white;
+          ctx.fillRect(sx + 1, sy + 1, CELL - 2, CELL - 2);
+          ctx.fillStyle = P.bg;
+          const ex = sx + 6 + snakeDir.x * 3;
+          const ey = sy + 6 + snakeDir.y * 3;
+          ctx.fillRect(ex - 2, ey - 2, 3, 3);
+        } else {
+          ctx.fillStyle = i % 2 === 0 ? P.green : P.white;
+          ctx.fillRect(sx + 2, sy + 2, CELL - 4, CELL - 4);
+          ctx.fillStyle = P.green;
+          ctx.fillRect(sx + 1, sy + 4, CELL - 2, CELL - 8);
+        }
+      }
+
+      // 6. State Overlays
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 20px "Courier New", monospace';
+
+      if (penaltyFlashTimer > 0 && Math.floor(now / 140) % 2 === 0) {
+        ctx.fillStyle = P.orange;
+        ctx.fillText(`TIME PENALTY! +${D.penaltyApples} APPLES!`, W / 2, 28);
+      }
+
+      if (gateOpen && gameState === 'PLAYING' && Math.floor(now / 280) % 2 === 0) {
+        ctx.fillStyle = P.green;
+        ctx.fillText('▲ EXIT GATE OPEN! ▲', W / 2, 26);
+      }
+
+      if (gameState === 'GET_READY') {
+        drawBannerBox(P, `LEVEL ${currentLevel}`, `SPEED: ${D.shortLabel} • PLUMS: ${numPlumsConfig}`);
+      } else if (gameState === 'PAUSED') {
+        drawBannerBox(P, 'GAME PAUSED', 'PRESS SPACE TO CONTINUE');
+      } else if (gameState === 'LEVEL_WIN') {
+        drawBannerBox(P, `LEVEL ${currentLevel} CLEARED!`, 'BONUS SNAKE AWARDED!');
+      } else if (gameState === 'GAME_OVER') {
+        drawBannerBox(P, 'GAME OVER', 'PRESS SPACE OR RETURN TO PLAY AGAIN');
+      }
+
+      ctx.textAlign = 'left';
+
+      // 7. Bottom Apple II HUD
+      renderBottomHUD(P);
+    }
+
+    function drawBannerBox(P, title, subtitle) {
+      const bw = 360;
+      const bh = 74;
+      const bx = (W - bw) / 2;
+      const by = 112;
+      ctx.fillStyle = P.bg;
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = P.white;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bx, by, bw, bh);
+
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 22px "Courier New", monospace';
+      ctx.fillStyle = P.green;
+      ctx.fillText(title, W / 2, by + 14);
+      ctx.font = 'bold 14px "Courier New", monospace';
+      ctx.fillStyle = P.white;
+      ctx.fillText(subtitle, W / 2, by + 44);
+    }
+
+    function renderBottomHUD(P) {
+      const D = diff();
+      const hudTop = ROWS * CELL;
+      ctx.fillStyle = P.bg;
+      ctx.fillRect(0, hudTop, W, H - hudTop);
+
+      ctx.fillStyle = P.blue;
+      ctx.fillRect(0, hudTop, W, 2);
+
+      ctx.font = 'bold 15px "Courier New", monospace';
+      ctx.textBaseline = 'top';
+
+      ctx.fillStyle = P.orange;
+      ctx.fillText(`APPLES:${String(applesLeft).padStart(2, '0')}`, 14, hudTop + 12);
+
+      ctx.fillStyle = P.green;
+      ctx.fillText(`SNAKES:${String(snakesLeft).padStart(2, '0')}`, 144, hudTop + 12);
+
+      ctx.fillStyle = P.violet;
+      ctx.fillText(`LV:${String(currentLevel).padStart(2, '0')}/28`, 274, hudTop + 12);
+
+      ctx.fillStyle = P.blue;
+      ctx.fillText(`PLUMS:${numPlumsConfig}`, 388, hudTop + 12);
+
+      ctx.fillStyle = P.white;
+      ctx.fillText(`${D.shortLabel}`, 482, hudTop + 12);
+
+      ctx.fillStyle = P.white;
+      ctx.fillText(`SCORE:${String(score).padStart(6, '0')}`, 14, hudTop + 40);
+
+      ctx.fillStyle = P.green;
+      ctx.fillText(`HI SCORE:${String(hiScore).padStart(6, '0')}`, 196, hudTop + 40);
+
+      ctx.fillStyle = P.dimText;
+      ctx.fillText(`[${controlScheme}]`, 448, hudTop + 40);
+    }
+
+    /**************************************************************************
+     * MAIN ANIMATION LOOP
+     **************************************************************************/
+    let lastFrameTime = performance.now();
+    bootStartTime = lastFrameTime;
+
+    function mainLoop(now) {
+      const dt = Math.min(0.08, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      if (gameState === 'BOOT_INTRO') {
+        renderBootIntro(now);
+      } else if (gameState === 'TITLE') {
+        updateDemoSnake(dt);
+        renderTitleScreenContent(now, false);
+      } else if (gameState === 'GET_READY') {
+        stateTimer -= dt;
+        if (stateTimer <= 0) {
+          gameState = 'PLAYING';
+        }
+        renderPlayfield(now);
+      } else if (gameState === 'PLAYING') {
+        updateGameplay(dt);
+        renderPlayfield(now);
+      } else if (gameState === 'PAUSED') {
+        renderPlayfield(now);
+      } else if (gameState === 'DYING') {
+        stateTimer -= dt;
+        renderPlayfield(now);
+        if (stateTimer <= 0) {
+          snakesLeft--;
+          if (snakesLeft <= 0) {
+            snakesLeft = 0;
+            gameState = 'GAME_OVER';
+          } else {
+            initLevel(false);
+            gameState = 'GET_READY';
+            stateTimer = 1.1;
+          }
+        }
+      } else if (gameState === 'LEVEL_WIN') {
+        stateTimer -= dt;
+        renderPlayfield(now);
+        if (stateTimer <= 0) {
+          currentLevel = (currentLevel % 28) + 1;
+          initLevel(true);
+          gameState = 'GET_READY';
+          stateTimer = 1.25;
+        }
+      } else if (gameState === 'GAME_OVER') {
+        renderPlayfield(now);
+      }
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    requestAnimationFrame(mainLoop);
+  </script>
+</body>
+</html>
